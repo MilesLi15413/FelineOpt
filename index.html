@@ -71,7 +71,7 @@
       line-height: 1.6;
       word-break: break-word;
     }
-    .msg-user .bubble   { background: #38BDF8; color: #0A0F1E; border-bottom-right-radius: 3px; }
+    .msg-user .bubble    { background: #38BDF8; color: #0A0F1E; border-bottom-right-radius: 3px; }
     .msg-assistant .bubble { background: #273548; color: #F1F5F9; border-bottom-left-radius: 3px; }
 
     .empty-hint {
@@ -130,48 +130,6 @@
     .send-btn:hover { background: #0EA5E9; }
     .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .send-btn svg { width: 18px; height: 18px; }
-
-    .key-notice {
-      margin-top: 12px;
-      font-size: 0.75rem;
-      color: #475569;
-      text-align: center;
-    }
-    .key-notice a { color: #38BDF8; }
-
-    .api-key-wrap {
-      width: 100%;
-      max-width: 640px;
-      margin-bottom: 16px;
-      display: flex;
-      gap: 8px;
-    }
-    .api-key-input {
-      flex: 1;
-      background: #1E293B;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 9px 14px;
-      color: #F1F5F9;
-      font-size: 0.8rem;
-      outline: none;
-      transition: border-color 0.15s;
-    }
-    .api-key-input:focus { border-color: #38BDF8; }
-    .api-key-input::placeholder { color: #475569; }
-    .save-btn {
-      padding: 9px 16px;
-      background: #1E293B;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      color: #94A3B8;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
-      white-space: nowrap;
-    }
-    .save-btn:hover { border-color: #38BDF8; color: #38BDF8; }
   </style>
 </head>
 <body>
@@ -179,11 +137,6 @@
   <div class="hero">
     <div class="logo">Feline<span>Opt</span></div>
     <div class="slogan">Beware — Capitalism is making your cats sick.</div>
-  </div>
-
-  <div class="api-key-wrap">
-    <input class="api-key-input" id="apiKeyInput" type="password" placeholder="Paste your Anthropic API key to enable chat" />
-    <button class="save-btn" onclick="saveKey()">Save key</button>
   </div>
 
   <div class="chat-box">
@@ -200,29 +153,9 @@
     </div>
   </div>
 
-  <div class="key-notice">
-    No API key? Get one free at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>
-  </div>
-
   <script>
-    const SYSTEM_PROMPT = `You are a feline nutrition and pet food safety expert.
-Help cat owners understand pet food ingredients, additives, recalls, and how commercial
-pet food industry practices affect cat health. Be concise, clear, and direct.`;
-
-    function saveKey() {
-      const val = document.getElementById('apiKeyInput').value.trim();
-      if (val) { localStorage.setItem('fo_api_key', val); alert('API key saved!'); }
-    }
-
-    function getKey() { return localStorage.getItem('fo_api_key') || ''; }
-
-    // Pre-fill key input if saved
-    window.addEventListener('DOMContentLoaded', () => {
-      const saved = getKey();
-      if (saved) document.getElementById('apiKeyInput').value = saved;
-      document.getElementById('chatInput').addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
-      });
+    document.getElementById('chatInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
     });
 
     const history = [];
@@ -246,7 +179,6 @@ pet food industry practices affect cat health. Be concise, clear, and direct.`;
     function addTyping() {
       const hint = document.getElementById('emptyHint');
       if (hint) hint.remove();
-
       const msgs = document.getElementById('messages');
       const wrap = document.createElement('div');
       wrap.className = 'msg msg-assistant';
@@ -266,40 +198,25 @@ pet food industry practices affect cat health. Be concise, clear, and direct.`;
       const text = input.value.trim();
       if (!text) return;
 
-      const key = getKey();
-      if (!key) { alert('Please paste your Anthropic API key above and click Save key.'); return; }
-
       input.value = '';
       document.getElementById('sendBtn').disabled = true;
 
       addBubble('user', text);
       history.push({ role: 'user', content: text });
-
       addTyping();
 
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
+        const res = await fetch('/api/chat', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': key,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          },
-          body: JSON.stringify({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1024,
-            system: SYSTEM_PROMPT,
-            stream: true,
-            messages: history
-          })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: history }),
         });
 
         removeTyping();
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          addBubble('assistant', `Error: ${err?.error?.message || res.statusText}`);
+          addBubble('assistant', `Error: ${err?.error || res.statusText}`);
           document.getElementById('sendBtn').disabled = false;
           return;
         }
