@@ -20,6 +20,76 @@ const MIME = {
   '.ico':  'image/x-icon',
 };
 
+// ── Web-scraping helpers ─────────────────────────────
+function httpsGetPage(url, extraHeaders = {}, _redirects = 0) {
+  if (_redirects > 4) return Promise.reject(new Error('Too many redirects'));
+  return new Promise((resolve, reject) => {
+    let u;
+    try { u = new URL(url); } catch (e) { return reject(e); }
+    const r = https.request({
+      hostname: u.hostname,
+      path: u.pathname + u.search,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'identity',
+        ...extraHeaders,
+      },
+    }, res => {
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        const loc = res.headers.location.startsWith('http')
+          ? res.headers.location : `https://${u.hostname}${res.headers.location}`;
+        res.resume();
+        return httpsGetPage(loc, extraHeaders, _redirects + 1).then(resolve).catch(reject);
+      }
+      let data = '';
+      res.on('data', c => { data += c; });
+      res.on('end', () => resolve(data));
+    });
+    r.on('error', reject);
+    r.setTimeout(10000, () => { r.destroy(); reject(new Error('timeout')); });
+    r.end();
+  });
+}
+
+function extractIngredientsFromHtml(html) {
+  // Strategy 1: Next.js __NEXT_DATA__ (Chewy, PetSmart)
+  const nextM = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+  if (nextM) {
+    try {
+      const str = nextM[1];
+      const m = str.match(/"(?:ingredient[sS]?(?:List|Text)?)"\s*:\s*"([^"\\]{20,})"/);
+      if (m) return m[1].replace(/\\n/g, ' ').replace(/\\u([0-9a-f]{4})/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+    } catch {}
+  }
+
+  // Strategy 2: JSON-LD schema Product description
+  const ldRe = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = ldRe.exec(html)) !== null) {
+    try {
+      const obj = JSON.parse(m[1]);
+      const desc = (Array.isArray(obj) ? obj[0] : obj).description || '';
+      const ing = desc.match(/[Ii]ngredients?\s*[:\-]\s*([A-Z][^.]{20,})/);
+      if (ing) return ing[1].trim();
+    } catch {}
+  }
+
+  // Strategy 3: HTML text pattern — "Ingredients" heading followed by list text
+  const noScript = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '');
+  const textM = noScript.match(/[Ii]ngredients?\s*(?:<[^>]+>)*\s*:?\s*(?:<[^>]+>)*([A-Z][^<]{30,})/);
+  if (textM) {
+    return textM[1]
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&amp;/g, '&').replace(/&#x27;|&#39;/g, "'").replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  return null;
+}
+
 const server = http.createServer((req, res) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -33,7 +103,7 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  // ── Ingredient lookup via Claude ─────────────────────
+  // ── Ingredient lookup: database → web scrape → AI ───
   if (req.method === 'GET' && req.url.startsWith('/api/ingredients')) {
     const qs = new URL(`http://x${req.url}`).searchParams;
     const product = (qs.get('product') || '').trim();
@@ -43,48 +113,92 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    const payload = JSON.stringify({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 512,
-      messages: [{
-        role: 'user',
-        content: `List the ingredients in "${product}" cat/pet food based on your training knowledge. Reply with ONLY a comma-separated ingredient list — no intro, no explanation, no disclaimers. If you have no knowledge of this product at all, reply with exactly: UNKNOWN`,
-      }],
-    });
-
-    const options = {
-      hostname: 'api.anthropic.com',
-      path: '/v1/messages',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Content-Length': Buffer.byteLength(payload),
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
+    const respond = (ingredients, source) => {
+      res.writeHead(200, { ...headers, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ingredients: ingredients || null, source: source || null }));
     };
 
-    const proxy = https.request(options, (apiRes) => {
-      let data = '';
-      apiRes.on('data', c => { data += c; });
-      apiRes.on('end', () => {
+    (async () => {
+      // Build a list of search queries from specific → short (databases work better with fewer words)
+      const words = product.split(/\s+/);
+      const queries = [...new Set([product, words.slice(0, 3).join(' '), words.slice(0, 2).join(' '), words[0]])].filter(Boolean);
+
+      // 1. Open Pet Food Facts name search
+      for (const q of queries) {
         try {
-          const json = JSON.parse(data);
-          const text = json.content?.[0]?.text?.trim() || 'UNKNOWN';
-          res.writeHead(200, { ...headers, 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ingredients: text === 'UNKNOWN' ? null : text }));
-        } catch {
-          res.writeHead(500, { ...headers, 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ingredients: null }));
+          const body = await httpsGetPage(`https://world.openpetfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&json=1&fields=product_name,ingredients_text&page_size=10`);
+          const data = JSON.parse(body);
+          for (const p of (data.products || [])) {
+            const ing = (p.ingredients_text || '').trim();
+            if (ing.length > 10) return respond(ing, 'openpetfoodfacts');
+          }
+        } catch {}
+      }
+
+      // 2. Open Food Facts name search
+      for (const q of queries) {
+        try {
+          const body = await httpsGetPage(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&json=1&fields=product_name,ingredients_text&page_size=10`);
+          const data = JSON.parse(body);
+          for (const p of (data.products || [])) {
+            const ing = (p.ingredients_text || '').trim();
+            if (ing.length > 10) return respond(ing, 'openfoodfacts');
+          }
+        } catch {}
+      }
+
+      // 3. DuckDuckGo → scrape first product page from known pet retailers
+      try {
+        const ddgQuery = `${product} cat food ingredients site:chewy.com OR site:petsmart.com OR site:petco.com`;
+        const ddgHtml = await httpsGetPage(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(ddgQuery)}`);
+        const urlRe = /uddg=([^"&]+)/g;
+        let urlM;
+        const tried = new Set();
+        while ((urlM = urlRe.exec(ddgHtml)) !== null) {
+          let target;
+          try { target = decodeURIComponent(urlM[1]); } catch { continue; }
+          if (!/chewy\.com|petsmart\.com|petco\.com/i.test(target)) continue;
+          if (tried.has(target) || tried.size >= 3) break;
+          tried.add(target);
+          try {
+            const html = await httpsGetPage(target);
+            const ing = extractIngredientsFromHtml(html);
+            if (ing && ing.length > 10) {
+              const src = /chewy\.com/i.test(target) ? 'chewy'
+                : /petsmart\.com/i.test(target) ? 'petsmart' : 'petco';
+              return respond(ing, src);
+            }
+          } catch {}
         }
+      } catch {}
+
+      // 5. Claude AI last resort
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 512,
+        messages: [{
+          role: 'user',
+          content: `List the ingredients in "${product}" cat/pet food based on your training knowledge. Reply with ONLY a comma-separated ingredient list — no intro, no explanation, no disclaimers. If you have no knowledge of this product at all, reply with exactly: UNKNOWN`,
+        }],
       });
-    });
-    proxy.on('error', () => {
-      res.writeHead(500, { ...headers, 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ ingredients: null }));
-    });
-    proxy.write(payload);
-    proxy.end();
+      const apiReq = https.request({
+        hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload), 'x-api-key': ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+      }, (apiRes) => {
+        let data = '';
+        apiRes.on('data', c => { data += c; });
+        apiRes.on('end', () => {
+          try {
+            const json = JSON.parse(data);
+            const text = (json.content?.[0]?.text || '').trim();
+            respond(text && text !== 'UNKNOWN' ? text : null, 'ai');
+          } catch { respond(null, null); }
+        });
+      });
+      apiReq.on('error', () => respond(null, null));
+      apiReq.write(payload);
+      apiReq.end();
+    })();
     return;
   }
 

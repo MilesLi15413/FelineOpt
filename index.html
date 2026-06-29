@@ -849,6 +849,57 @@
       box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
     }
 
+    .ing-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 12px 14px;
+      max-height: 220px;
+      overflow-y: auto;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .ing-chip-list::-webkit-scrollbar { width: 4px; }
+    .ing-chip-list::-webkit-scrollbar-track { background: transparent; }
+    .ing-chip-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    .ing-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 5px 12px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 999px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    .ing-chip:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-hover);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 0 var(--primary-hover), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .ing-chip:active {
+      transform: translateY(1px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+    .ing-chip-hint {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-style: italic;
+    }
+
     .barcode-ask-btn {
       display: inline-flex;
       align-items: center;
@@ -1856,12 +1907,12 @@
         </div>
         ${ingredients ? `
           <div>
-            <div class="barcode-section-label">Ingredient List</div>
-            <div class="barcode-ingredients">${ingredients}</div>
+            <div class="barcode-section-label">Ingredients <span style="font-weight:500;text-transform:none;letter-spacing:0;font-size:0.6rem;color:var(--muted);">— tap any to ask about it</span></div>
+            <div class="ing-chip-list" id="ing-chips-main"></div>
           </div>
           <button class="barcode-ask-btn" onclick="barcodeAskAI(${JSON.stringify(brand || name)}, ${JSON.stringify(ingredients)})">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-            Ask FelineOpt about these ingredients
+            Analyze all ingredients
           </button>
         ` : `
           <div id="barcode-ing-lookup">
@@ -1870,7 +1921,9 @@
         `}
       `;
 
-      if (!ingredients) {
+      if (ingredients) {
+        renderIngChips(document.getElementById('ing-chips-main'), ingredients, brand || name);
+      } else {
         const label = [brand, name].filter(Boolean).join(' ');
         fetch(`/api/ingredients?product=${encodeURIComponent(label)}`)
           .then(r => r.json())
@@ -1878,15 +1931,17 @@
             const box = document.getElementById('barcode-ing-lookup');
             if (!box) return;
             if (d.ingredients) {
+              const srcLabel = {'chewy':'chewy.com','petco':'petco.com','openpetfoodfacts':'Open Pet Food Facts','openfoodfacts':'Open Food Facts','ai':'AI'}[d.source] || d.source || 'web';
               box.innerHTML = `
                 <div>
-                  <div class="barcode-section-label">Ingredient List <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.6rem;">(AI-sourced)</span></div>
-                  <div class="barcode-ingredients">${d.ingredients}</div>
+                  <div class="barcode-section-label">Ingredients <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.6rem;">(via ${srcLabel}) — tap any to ask about it</span></div>
+                  <div class="ing-chip-list" id="ing-chips-ai"></div>
                 </div>
                 <button class="barcode-ask-btn" onclick="barcodeAskAI(${JSON.stringify(label)}, ${JSON.stringify(d.ingredients)})">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                  Ask FelineOpt about these ingredients
+                  Analyze all ingredients
                 </button>`;
+              renderIngChips(document.getElementById('ing-chips-ai'), d.ingredients, label);
             } else {
               box.innerHTML = `
                 <div class="barcode-not-found" style="padding:10px 0 4px;">Ingredient list not found.</div>
@@ -1905,6 +1960,47 @@
       result.innerHTML = `<div class="barcode-not-found">Error: ${e.message}</div>`;
     }
     btn.disabled = false;
+  }
+
+  function parseIngredients(text) {
+    const cleaned = text.replace(/\.$/, '').trim();
+    const list = [];
+    let depth = 0, current = '';
+    for (const ch of cleaned) {
+      if (ch === '(') depth++;
+      else if (ch === ')') depth--;
+      if (ch === ',' && depth === 0) {
+        const t = current.trim();
+        if (t) list.push(t);
+        current = '';
+      } else {
+        current += ch;
+      }
+    }
+    if (current.trim()) list.push(current.trim());
+    return list;
+  }
+
+  function renderIngChips(container, ingredientsText, productName) {
+    if (!container) return;
+    const list = parseIngredients(ingredientsText);
+    container.innerHTML = '';
+    list.forEach(ing => {
+      const chip = document.createElement('button');
+      chip.className = 'ing-chip';
+      chip.textContent = ing;
+      chip.title = 'Ask FelineOpt about this ingredient';
+      chip.addEventListener('click', () => askAboutIngredient(ing, productName));
+      container.appendChild(chip);
+    });
+  }
+
+  function askAboutIngredient(ingredient, productName) {
+    closeBarcode();
+    const input = document.getElementById('chatInput');
+    input.value = `In "${productName}", is the ingredient "${ingredient}" safe for cats? What is it and what are any known risks?`;
+    input.focus();
+    sendMessage();
   }
 
   function barcodeAskAI(productName, ingredients) {
