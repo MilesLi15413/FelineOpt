@@ -5,152 +5,1170 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>FelineOpt</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
   <style>
+    /* ── Color system ── */
+    :root {
+      --bg:            #f3f1bf;
+      --surface:       #fafae8;
+      --border:        #d4d28a;
+      --primary:       #b9cedd;
+      --primary-light: #ddeaf3;
+      --primary-hover: #7aaec8;
+      --primary-active:#2e6e94;
+      --accent:        #e8a07a;
+      --accent-press:  #c4714a;
+      --text:          #3a3820;
+      --text-primary:  #2e4e63;
+      --muted:         #7a7850;
+      --clay-shadow:   0 8px 24px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.08), inset 0 2px 0 rgba(255,255,255,0.55), inset 0 -4px 0 rgba(0,0,0,0.10);
+    }
+
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: "Inter", system-ui, sans-serif;
-      background: #0A0F1E;
-      color: #F1F5F9;
-      min-height: 100vh;
+      font-family: "Nunito", system-ui, sans-serif;
+      background-color: var(--bg);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+      color: var(--text);
+      height: 100vh;
+      overflow: hidden;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 24px;
+      padding: 14px 16px;
     }
 
-    .hero {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-
-    .logo {
-      font-size: 3rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      margin-bottom: 12px;
-    }
-    .logo span { color: #38BDF8; }
-
-    .slogan {
-      font-size: 1rem;
-      color: #94A3B8;
-      font-weight: 400;
-    }
-
-    .chat-box {
+    /* ── Layout ── */
+    .layout {
+      display: flex;
+      align-items: stretch;
+      justify-content: center;
+      gap: 20px;
       width: 100%;
-      max-width: 640px;
-      background: #1E293B;
-      border: 1px solid #334155;
-      border-radius: 16px;
+      max-width: 1400px;
+      flex: 1;
+      min-height: 0;
       overflow: hidden;
     }
 
+    .layout.split {
+      flex: none;
+      height: 82vh;
+      max-width: 78vw;
+      overflow: hidden;
+    }
+
+    /* ── Chat section ── */
+    .chat-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      max-width: 900px;
+      flex: 1;
+      min-height: 0;
+      transition: max-width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .layout.split .chat-section {
+      max-width: none;
+      align-items: stretch;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .layout.split .hero {
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      gap: 16px;
+    }
+
+    .hero-text { flex-shrink: 1; }
+
+    .logo {
+      font-size: 5rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      color: var(--text);
+      transition: font-size 0.4s ease, margin-bottom 0.4s ease;
+    }
+    .layout.split .logo { font-size: 2rem; margin-bottom: 2px; }
+    .logo span { color: var(--primary-active); }
+
+    .slogan {
+      font-size: 1.2rem;
+      color: var(--muted);
+      font-weight: 600;
+      transition: font-size 0.4s ease;
+    }
+    .layout.split .slogan { font-size: 0.8rem; }
+
+    /* ── Recall (CTA) button ── */
+    .recall-btn {
+      margin-top: 20px;
+      padding: 12px 30px;
+      background: var(--accent);
+      color: #5c2e0e;
+      border: 1.5px solid var(--accent-press);
+      border-radius: 16px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 1rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      box-shadow: 0 6px 0 var(--accent-press), 0 8px 20px rgba(232,160,122,0.4), inset 0 2px 0 rgba(255,255,255,0.5);
+      transition: all 0.18s ease;
+    }
+    .layout.split .recall-btn { margin-top: 0; }
+    .recall-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 var(--accent-press), 0 12px 28px rgba(232,160,122,0.5), inset 0 2px 0 rgba(255,255,255,0.5);
+    }
+    .recall-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 var(--accent-press), 0 4px 10px rgba(232,160,122,0.3), inset 0 2px 0 rgba(255,255,255,0.5);
+    }
+
+    /* ── Chat box ── */
+    .chat-box {
+      width: 100%;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--clay-shadow);
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Messages ── */
     .messages {
-      height: 360px;
+      flex: 1;
+      min-height: 0;
       overflow-y: auto;
       padding: 20px;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
-    .messages::-webkit-scrollbar { width: 4px; }
-    .messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-    .msg { display: flex; flex-direction: column; max-width: 80%; }
+    .messages::-webkit-scrollbar { width: 5px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    .msg { display: flex; flex-direction: column; max-width: 82%; }
     .msg-user { align-self: flex-end; align-items: flex-end; }
     .msg-assistant { align-self: flex-start; }
 
     .bubble {
-      padding: 10px 14px;
-      border-radius: 12px;
-      font-size: 0.875rem;
-      line-height: 1.6;
+      padding: 11px 16px;
+      border-radius: 20px;
+      font-size: 0.97rem;
+      font-weight: 500;
+      line-height: 1.7;
       word-break: break-word;
     }
-    .msg-user .bubble    { background: #38BDF8; color: #0A0F1E; border-bottom-right-radius: 3px; }
-    .msg-assistant .bubble { background: #273548; color: #F1F5F9; border-bottom-left-radius: 3px; }
+    .msg-user .bubble {
+      background: var(--primary);
+      color: var(--text-primary);
+      border-bottom-right-radius: 5px;
+      box-shadow: 0 4px 12px rgba(185,206,221,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+    .msg-assistant .bubble {
+      background: var(--bg);
+      color: var(--text);
+      border-bottom-left-radius: 5px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.7);
+      white-space: pre-wrap;
+    }
+    .msg-assistant .bubble a { color: var(--primary-active); text-decoration: underline; font-weight: 600; }
+    .msg-assistant .bubble a:hover { color: var(--primary-hover); }
 
-    .empty-hint {
-      margin: auto;
-      text-align: center;
-      color: #475569;
-      font-size: 0.875rem;
+    .lottie-typing-bubble {
+      width: 140px;
+      height: 140px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.7);
+      overflow: hidden;
+      flex-shrink: 0;
     }
 
-    .typing { display: flex; gap: 4px; align-items: center; padding: 10px 14px; }
-    .typing span {
-      width: 6px; height: 6px; border-radius: 50%;
-      background: #94A3B8;
-      animation: blink 1.2s infinite;
-    }
-    .typing span:nth-child(2) { animation-delay: 0.2s; }
-    .typing span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes blink {
-      0%, 60%, 100% { opacity: 0.3; }
-      30% { opacity: 1; }
-    }
-
+    /* ── Input row ── */
     .input-row {
       display: flex;
-      gap: 8px;
-      padding: 12px;
-      border-top: 1px solid #334155;
-      background: #273548;
+      gap: 10px;
+      padding: 14px;
+      border-top: 1.5px solid var(--border);
+      background: var(--primary-light);
+      flex-shrink: 0;
     }
 
     .chat-input {
       flex: 1;
-      background: #1E293B;
-      border: 1px solid #334155;
-      border-radius: 8px;
-      padding: 10px 14px;
-      color: #F1F5F9;
-      font-size: 0.875rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 11px 16px;
+      color: var(--text);
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.97rem;
+      font-weight: 500;
       outline: none;
-      transition: border-color 0.15s;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
     }
-    .chat-input:focus { border-color: #38BDF8; }
-    .chat-input::placeholder { color: #475569; }
+    .chat-input:focus {
+      border-color: var(--primary-hover);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.06), 0 0 0 3px rgba(185,206,221,0.35);
+    }
+    .chat-input::placeholder { color: var(--muted); }
 
+    /* ── Send button ── */
     .send-btn {
-      width: 42px; height: 42px;
-      border-radius: 8px;
-      background: #38BDF8;
-      color: #0A0F1E;
-      border: none;
+      width: 50px; height: 50px;
+      border-radius: 14px;
+      background: var(--primary);
+      color: var(--text-primary);
+      border: 1.5px solid var(--primary-hover);
       cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       flex-shrink: 0;
-      transition: background 0.15s;
+      box-shadow: 0 6px 0 var(--primary-hover), 0 8px 20px rgba(185,206,221,0.4), inset 0 2px 0 rgba(255,255,255,0.5);
+      transition: all 0.18s ease;
     }
-    .send-btn:hover { background: #0EA5E9; }
-    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-    .send-btn svg { width: 18px; height: 18px; }
+    .send-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 var(--primary-hover), 0 12px 28px rgba(185,206,221,0.5), inset 0 2px 0 rgba(255,255,255,0.5);
+    }
+    .send-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 var(--primary-hover), inset 0 2px 0 rgba(255,255,255,0.3);
+    }
+    .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .send-btn svg { width: 20px; height: 20px; }
+
+    /* ── Recalls slide-in panel ── */
+    .recalls-panel {
+      flex-shrink: 0;
+      width: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .layout.split .recalls-panel {
+      flex: 1;
+      width: auto;
+      min-width: 0;
+      opacity: 1;
+    }
+
+    .recalls-panel-inner {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      box-shadow: var(--clay-shadow);
+    }
+
+    /* ── Recalls header ── */
+    .recalls-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1.5px solid var(--border);
+      background: var(--primary-light);
+      flex-shrink: 0;
+    }
+    .recalls-panel-header h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+    .recalls-panel-header span {
+      font-size: 0.78rem;
+      color: var(--muted);
+      margin-left: 6px;
+      font-weight: 600;
+    }
+
+    .recalls-close {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--muted);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 5px 10px;
+      border-radius: 10px;
+      line-height: 1;
+      font-weight: 700;
+      box-shadow: 0 3px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.7);
+      transition: all 0.18s ease;
+    }
+    .recalls-close:hover {
+      background: var(--primary-light);
+      color: var(--text);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .recalls-close:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    /* ── Recall list ── */
+    .recall-list {
+      overflow-y: auto;
+      padding: 12px 0;
+      flex: 1;
+      min-height: 0;
+    }
+    .recall-list::-webkit-scrollbar { width: 5px; }
+    .recall-list::-webkit-scrollbar-track { background: transparent; }
+    .recall-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    /* ── Recall cards ── */
+    .recall-card {
+      margin: 0 12px 10px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 22px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.7);
+      overflow: hidden;
+      transition: box-shadow 0.18s ease, border-color 0.18s ease;
+      min-height: 95px;
+    }
+    .recall-card:hover {
+      box-shadow: 0 8px 20px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.7);
+      border-color: var(--primary-hover);
+    }
+
+    .recall-card-main {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 18px;
+      cursor: pointer;
+      min-height: 95px;
+    }
+
+    .recall-card-body { flex: 1; min-width: 0; }
+
+    /* ── Badges ── */
+    .recall-badge {
+      flex-shrink: 0;
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      padding: 4px 11px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      align-self: flex-start;
+      margin-top: 2px;
+    }
+    .badge-advisory  { background: #0D9488; color: #fff; }
+    .badge-voluntary { background: #D97706; color: #fff; }
+    .badge-class1    { background: #DC2626; color: #fff; }
+
+    .recall-brand {
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: var(--primary-active);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+    .recall-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 5px;
+    }
+    .recall-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    .recall-right {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+    .recall-card-date {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .recall-arrow {
+      width: 30px;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--primary);
+      border: 1.5px solid var(--primary-hover);
+      border-radius: 8px;
+      font-size: 1.2rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      box-shadow: 0 3px 0 var(--primary-hover), inset 0 1px 0 rgba(255,255,255,0.5);
+      transition: transform 0.2s ease, box-shadow 0.18s ease;
+      line-height: 1;
+    }
+    .recall-card.open .recall-arrow {
+      transform: rotate(90deg);
+      box-shadow: 0 1px 0 var(--primary-hover);
+    }
+
+    /* ── Expanded detail section ── */
+    .recall-detail {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.35s ease;
+      border-top: 0px solid var(--border);
+    }
+    .recall-card.open .recall-detail {
+      max-height: 600px;
+      border-top-width: 1.5px;
+    }
+    .recall-detail-inner {
+      padding: 12px 16px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .recall-detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px 16px;
+    }
+    .recall-detail-row {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .recall-detail-label {
+      font-size: 0.6rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .recall-detail-value {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    .recall-fda-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--primary-light);
+      border: 1.5px solid var(--primary-hover);
+      border-radius: 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--primary-active);
+      text-decoration: none;
+      transition: all 0.18s ease;
+      align-self: flex-start;
+    }
+    .recall-fda-link:hover {
+      background: var(--primary);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(185,206,221,0.4);
+    }
+    .recall-images {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .recall-images img {
+      width: 80px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: zoom-in;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .recall-images img:hover {
+      transform: scale(1.06);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+    }
+
+    /* ── Lightbox ── */
+    .lightbox-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      align-items: center;
+      justify-content: center;
+      cursor: zoom-out;
+    }
+    .lightbox-overlay.open { display: flex; }
+    .lightbox-img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 32px 80px rgba(0,0,0,0.6);
+      cursor: default;
+      filter: url(#lb-sharpen) contrast(1.06);
+    }
+    .lightbox-close {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      background: rgba(255,255,255,0.15);
+      border: none;
+      color: #fff;
+      font-size: 1.3rem;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: background 0.18s ease;
+      line-height: 1;
+    }
+    .lightbox-close:hover { background: rgba(255,255,255,0.30); }
+    .recall-img-loading {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 600;
+      font-style: italic;
+    }
+    .recall-img-none {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+    }
+
+    .recall-action-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .recall-ask-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--accent);
+      border: 1.5px solid var(--accent-press);
+      border-radius: 10px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #5c2e0e;
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--accent-press), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: all 0.18s ease;
+      white-space: nowrap;
+    }
+    .recall-ask-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 var(--accent-press), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .recall-ask-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--accent-press);
+    }
+
+    /* ── CAT pill ── */
+    .cat-tag {
+      display: inline-block;
+      font-size: 0.58rem;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      background: var(--primary);
+      color: var(--text-primary);
+      padding: 2px 8px;
+      border-radius: 999px;
+      vertical-align: middle;
+      margin-left: 6px;
+    }
+
+    /* ── States ── */
+    .recall-empty, .recall-loading {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .recall-sentinel {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .spinner {
+      width: 22px;
+      height: 22px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary-active);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .recall-end {
+      text-align: center;
+      padding: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    /* ── Barcode button ── */
+    #barcodeWrap {
+      position: fixed;
+      top: 16px;
+      left: 20px;
+      z-index: 999;
+    }
+
+    #barcodeBtn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 18px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.8);
+      transition: all 0.18s ease;
+      letter-spacing: 0.03em;
+    }
+    #barcodeBtn:hover {
+      background: var(--primary-light);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    #barcodeBtn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--border);
+    }
+
+    /* ── Barcode dropdown ── */
+    #barcodeDropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 20px 20px;
+      box-shadow: var(--clay-shadow);
+      width: 420px;
+      max-height: 72vh;
+      overflow-y: auto;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    #barcodeDropdown { display: none; }
+    #barcodeDropdown.open { display: flex; }
+    #barcodeDropdown::-webkit-scrollbar { width: 5px; }
+    #barcodeDropdown::-webkit-scrollbar-track { background: transparent; }
+    #barcodeDropdown::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+
+    .barcode-input-row {
+      display: flex;
+      gap: 10px;
+    }
+    .barcode-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 11px 16px;
+      color: var(--text);
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      outline: none;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.06);
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      letter-spacing: 0.05em;
+    }
+    .barcode-input:focus {
+      border-color: var(--primary-hover);
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.06), 0 0 0 3px rgba(185,206,221,0.35);
+    }
+    .barcode-input::placeholder { color: var(--muted); letter-spacing: 0; }
+
+    .barcode-search-btn {
+      padding: 11px 22px;
+      background: var(--primary);
+      color: var(--text-primary);
+      border: 1.5px solid var(--primary-hover);
+      border-radius: 14px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 5px 0 var(--primary-hover), inset 0 2px 0 rgba(255,255,255,0.5);
+      transition: all 0.18s ease;
+    }
+    .barcode-search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 var(--primary-hover), inset 0 2px 0 rgba(255,255,255,0.5);
+    }
+    .barcode-search-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 var(--primary-hover);
+    }
+    .barcode-search-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .barcode-hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      font-weight: 500;
+      margin-top: -8px;
+    }
+
+    /* ── Result card ── */
+    .barcode-result-card {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.07), inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .barcode-product-img {
+      width: 100px;
+      height: 100px;
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: #fff;
+      flex-shrink: 0;
+      cursor: zoom-in;
+      transition: transform 0.15s ease;
+    }
+    .barcode-product-img:hover { transform: scale(1.04); }
+
+    .barcode-result-info { flex: 1; min-width: 0; }
+    .barcode-result-brand {
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      color: var(--primary-active);
+      margin-bottom: 4px;
+    }
+    .barcode-result-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.35;
+      margin-bottom: 4px;
+    }
+    .barcode-result-qty {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--muted);
+    }
+
+    .barcode-section-label {
+      font-size: 0.62rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .barcode-ingredients {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 14px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.04);
+    }
+
+    .barcode-ask-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 18px;
+      background: var(--accent);
+      border: 1.5px solid var(--accent-press);
+      border-radius: 12px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 800;
+      color: #5c2e0e;
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--accent-press), inset 0 1px 0 rgba(255,255,255,0.4);
+      transition: all 0.18s ease;
+      align-self: flex-start;
+    }
+    .barcode-ask-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 0 var(--accent-press), inset 0 1px 0 rgba(255,255,255,0.4);
+    }
+    .barcode-ask-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--accent-press); }
+
+    .barcode-not-found {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .barcode-loading {
+      text-align: center;
+      padding: 24px 12px;
+      color: var(--muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      font-style: italic;
+    }
+
+    /* ── Camera scan button ── */
+    .barcode-cam-btn {
+      width: 46px;
+      height: 46px;
+      border-radius: 14px;
+      background: var(--surface);
+      color: var(--muted);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: 0 5px 0 var(--border), inset 0 2px 0 rgba(255,255,255,0.5);
+      transition: all 0.18s ease;
+    }
+    .barcode-cam-btn:hover {
+      background: var(--primary-light);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 7px 0 var(--border), inset 0 2px 0 rgba(255,255,255,0.5);
+    }
+    .barcode-cam-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 var(--border);
+    }
+
+    /* ── Camera viewer ── */
+    #barcodeCameraWrap {
+      border-radius: 16px;
+      overflow: hidden;
+      background: #111827;
+      display: flex;
+      flex-direction: column;
+    }
+    #barcodeVideo {
+      width: 100%;
+      display: block;
+      max-height: 260px;
+      object-fit: cover;
+      background: #111827;
+    }
+    .barcode-camera-status {
+      text-align: center;
+      padding: 8px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: rgba(255,255,255,0.7);
+      background: #111827;
+      letter-spacing: 0.02em;
+    }
+    .barcode-stop-btn {
+      margin: 0 12px 12px;
+      padding: 9px 18px;
+      background: #374151;
+      color: #e5e7eb;
+      border: 1.5px solid #4b5563;
+      border-radius: 12px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      box-shadow: 0 3px 0 #1f2937, inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .barcode-stop-btn:hover {
+      background: #4b5563;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 0 #1f2937, inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .barcode-stop-btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 #1f2937;
+    }
+
+    /* ── Attribution button & dropdown ── */
+    #attrWrap {
+      position: fixed;
+      top: 16px;
+      right: 20px;
+      z-index: 999;
+    }
+
+    #attrBtn {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 18px;
+      font-family: "Nunito", system-ui, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      color: var(--muted);
+      cursor: pointer;
+      box-shadow: 0 4px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.8);
+      transition: all 0.18s ease;
+      letter-spacing: 0.03em;
+    }
+    #attrBtn:hover {
+      background: var(--primary-light);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+      box-shadow: 0 5px 0 var(--border), inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    #attrBtn:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--border);
+    }
+
+    #attrDropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 10px);
+      right: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 20px;
+      padding: 18px 20px 20px;
+      box-shadow: var(--clay-shadow);
+      width: 380px;
+    }
+    #attrDropdown.open { display: block; }
+
+    .attr-title {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    .attr-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .attr-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .attr-anim {
+      width: 150px;
+      height: 150px;
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .attr-link {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--primary-active);
+      text-decoration: none;
+      border-bottom: 1.5px solid var(--primary-hover);
+      padding-bottom: 1px;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+    .attr-link:hover {
+      color: var(--primary-hover);
+      border-color: var(--primary-hover);
+    }
+
+    @media (max-width: 800px) {
+      .btn-label { display: none; }
+      #barcodeBtn, #attrBtn { padding: 10px 14px; }
+    }
   </style>
 </head>
-<body>
+<body id="body">
 
-  <div class="hero">
-    <div class="logo">Feline<span>Opt</span></div>
-    <div class="slogan">Beware — Capitalism is making your cats sick.</div>
+  <!-- ── Barcode Lookup ── -->
+  <div id="barcodeWrap">
+    <button id="barcodeBtn" onclick="toggleBarcode()">&#x22EF;<span class="btn-label"> Barcode Lookup</span></button>
+    <div id="barcodeDropdown">
+      <div class="attr-title">Barcode Lookup</div>
+      <div class="barcode-input-row">
+        <input class="barcode-input" id="barcodeInput" type="text" inputmode="numeric" placeholder="Enter UPC or EAN barcode…" />
+        <button class="barcode-cam-btn" id="barcodeScanBtn" onclick="startBarcodeScanning()" title="Scan with Camera">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </button>
+        <button class="barcode-search-btn" id="barcodeSearchBtn" onclick="lookupBarcode()">Search</button>
+      </div>
+      <div class="barcode-hint">e.g. 7350042410035 &nbsp;·&nbsp; Works with UPC-A, EAN-13</div>
+      <div id="barcodeCameraWrap" style="display:none">
+        <video id="barcodeVideo" playsinline autoplay muted></video>
+        <div class="barcode-camera-status">Point camera at barcode…</div>
+        <button class="barcode-stop-btn" onclick="stopBarcodeScanning()">Stop Scanning</button>
+      </div>
+      <div id="barcodeResult"></div>
+    </div>
   </div>
 
-  <div class="chat-box">
-    <div class="messages" id="messages">
-      <div class="empty-hint" id="emptyHint">Ask anything about cat food, ingredients, or recalls…</div>
+  <!-- ── Artwork Attribution ── -->
+  <div id="attrWrap">
+    <button id="attrBtn" onclick="toggleAttr()" title="Artwork credits">✦<span class="btn-label"> Artwork Credits</span></button>
+    <div id="attrDropdown">
+      <div class="attr-title">Artwork Credits</div>
+      <div class="attr-grid">
+        <div class="attr-item">
+          <div class="attr-anim" id="attrAnim1"></div>
+          <a class="attr-link" href="https://lottiefiles.com/vlfdfjwtvo" target="_blank" rel="noopener noreferrer">Kelly Loh</a>
+        </div>
+        <div class="attr-item">
+          <div class="attr-anim" id="attrAnim2"></div>
+          <a class="attr-link" href="https://lottiefiles.com/0xh939uddpxzawqa" target="_blank" rel="noopener noreferrer">Vadim mirox</a>
+        </div>
+      </div>
     </div>
-    <div class="input-row">
-      <input class="chat-input" id="chatInput" type="text" placeholder="e.g. What is Red 40 and is it safe for cats?" />
-      <button class="send-btn" id="sendBtn" onclick="sendMessage()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-      </button>
+  </div>
+
+  <!-- SVG sharpen filter for lightbox -->
+  <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+    <filter id="lb-sharpen" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <feConvolveMatrix order="3" kernelMatrix="0 -1 0  -1 5 -1  0 -1 0" preserveAlpha="true"/>
+    </filter>
+  </svg>
+
+  <!-- Lightbox overlay -->
+  <div class="lightbox-overlay" id="lightboxOverlay" onclick="closeLightbox(event)">
+    <button class="lightbox-close" onclick="closeLightbox()">&#x2715;</button>
+    <img class="lightbox-img" id="lightboxImg" src="" alt="Product image" onclick="event.stopPropagation()">
+  </div>
+
+  <div class="layout" id="layout">
+
+    <!-- Left: chat -->
+    <div class="chat-section">
+      <div class="hero">
+        <div class="hero-text">
+          <div class="logo">Feline<span>Opt</span></div>
+          <div class="slogan">Beware — Capitalism is making your cats sick.</div>
+        </div>
+        <button class="recall-btn" id="recallToggleBtn" onclick="toggleRecalls()">Recalls</button>
+      </div>
+
+      <div class="chat-box">
+        <div class="messages" id="messages">
+          <div id="catInChat">
+            <div id="catInRocketLottie"></div>
+            <div id="catInChatLabel">Ask about cat food product safety</div>
+          </div>
+        </div>
+        <div class="input-row">
+          <input class="chat-input" id="chatInput" type="text" placeholder="e.g. What is Red 40 and is it safe for cats?" />
+          <button class="send-btn" id="sendBtn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+            </svg>
+          </button>
+        </div>
+        <div class="chat-disclaimer">Disclaimer: FelineOpt provides ingredient analysis only and is not a substitute for veterinary medical advice. For health concerns or dietary decisions, consult a licensed veterinarian.</div>
+      </div>
     </div>
+
+    <!-- Right: recalls slide-in panel -->
+    <div class="recalls-panel" id="recallsPanel">
+      <div class="recalls-panel-inner">
+        <div class="recalls-panel-header">
+          <div>
+            <h2>Pet Food Recalls<span id="recallMonthLabel"></span></h2>
+            <div style="font-size:0.7rem;color:var(--muted);margin-top:3px;font-weight:600;">
+              Source: FDA Animal &amp; Veterinary &nbsp;·&nbsp;
+              <a href="https://www.petful.com/recalls/#cat" target="_blank" rel="noopener noreferrer" style="color:var(--primary-active);text-decoration:underline;font-weight:700;">Full list on Petful ↗</a>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="recalls-close" onclick="refreshRecalls()" title="Refresh">&#x21BB;</button>
+            <button class="recalls-close" onclick="closeRecalls()" title="Close">&#x2715;</button>
+          </div>
+        </div>
+        <div class="recall-list" id="recallList">
+          <div class="recall-loading">Loading recalls…</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -160,35 +1178,67 @@
 
     const history = [];
 
+    function renderText(text) {
+      const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+      return escaped.replace(
+        /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g,
+        '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>'
+      );
+    }
+
     function addBubble(role, text) {
-      const hint = document.getElementById('emptyHint');
-      if (hint) hint.remove();
+      const cat = document.getElementById('catInChat');
+      if (cat) {
+        if (typeof window._destroyRocketAnim === 'function') window._destroyRocketAnim();
+        cat.remove();
+      }
 
       const msgs = document.getElementById('messages');
       const wrap = document.createElement('div');
       wrap.className = `msg msg-${role}`;
       const bubble = document.createElement('div');
       bubble.className = 'bubble';
-      bubble.textContent = text;
+      if (role === 'assistant') {
+        bubble.innerHTML = renderText(text);
+      } else {
+        bubble.textContent = text;
+      }
       wrap.appendChild(bubble);
       msgs.appendChild(wrap);
       msgs.scrollTop = msgs.scrollHeight;
       return bubble;
     }
 
+    let _lottieAnim = null;
+
     function addTyping() {
-      const hint = document.getElementById('emptyHint');
-      if (hint) hint.remove();
       const msgs = document.getElementById('messages');
       const wrap = document.createElement('div');
       wrap.className = 'msg msg-assistant';
       wrap.id = 'typing-indicator';
-      wrap.innerHTML = '<div class="bubble typing"><span></span><span></span><span></span></div>';
+      const bubble = document.createElement('div');
+      bubble.className = 'lottie-typing-bubble';
+      bubble.id = 'lottie-typing-container';
+      wrap.appendChild(bubble);
       msgs.appendChild(wrap);
       msgs.scrollTop = msgs.scrollHeight;
+      if (typeof lottie !== 'undefined') {
+        _lottieAnim = lottie.loadAnimation({
+          container: bubble,
+          renderer: 'svg',
+          loop: true,
+          autoplay: true,
+          path: '/cat-typing.json',
+        });
+      }
     }
 
     function removeTyping() {
+      if (_lottieAnim) { _lottieAnim.destroy(); _lottieAnim = null; }
       const t = document.getElementById('typing-indicator');
       if (t) t.remove();
     }
@@ -240,7 +1290,7 @@
               const json = JSON.parse(data);
               if (json.type === 'content_block_delta' && json.delta?.text) {
                 fullText += json.delta.text;
-                bubble.textContent = fullText;
+                bubble.innerHTML = renderText(fullText);
                 msgs.scrollTop = msgs.scrollHeight;
               }
             } catch {}
@@ -255,6 +1305,528 @@
 
       document.getElementById('sendBtn').disabled = false;
     }
+
+    /* ── Recalls ── */
+
+    let allRecalls = [];
+    let displayedCount = 0;
+    const PAGE_SIZE = 8;
+    let loadingMore = false;
+
+    function formatRecallDate(dateStr) {
+      if (!dateStr) return '';
+      const d = new Date(dateStr);
+      if (isNaN(d)) return dateStr;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    function getBadge(recall) {
+      const rt  = (recall.reasonType    || '').toLowerCase();
+      const cls = (recall.classification|| '').toLowerCase();
+      if (/salmonella|listeria|e\.?\s*coli|pathogen|contamination/i.test(rt)) return { label: 'Pathogen',  cls: 'badge-class1' };
+      if (/bird flu|influenza|virus/i.test(rt))                               return { label: 'Advisory',  cls: 'badge-advisory' };
+      if (/class i\b/.test(cls))                                              return { label: 'Class I',   cls: 'badge-class1' };
+      if (/class ii\b/.test(cls))                                             return { label: 'Class II',  cls: 'badge-voluntary' };
+      return { label: 'Voluntary', cls: 'badge-voluntary' };
+    }
+
+    function getCatTag(recall) {
+      return recall.catSpecific ? '<span class="cat-tag">CAT</span>' : '';
+    }
+
+    function esc(s) {
+      return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function buildCard(r) {
+      const badge = getBadge(r);
+      const brand = esc((r.brand || r.company || 'Unknown brand').trim());
+      const productType = esc((r.title || '').trim().slice(0, 100));
+      const recallingFirm = esc((r.company || '—').trim());
+      const reason = esc(r.reason || 'Unknown reason');
+      const date = formatRecallDate(r.date);
+      const fdaUrl = r.fdaPath ? `https://www.fda.gov${r.fdaPath}` : '';
+
+      const div = document.createElement('div');
+      div.className = 'recall-card';
+      div.innerHTML = `
+        <div class="recall-card-main">
+          <div class="recall-badge ${badge.cls}">${badge.label}</div>
+          <div class="recall-card-body">
+            <div class="recall-title">${brand} ${getCatTag(r)}</div>
+            ${productType ? `<div class="recall-brand" style="font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:none;letter-spacing:0;">${productType}</div>` : ''}
+            <div class="recall-sub" style="margin-top:3px;">${reason}</div>
+          </div>
+          <div class="recall-right">
+            <span class="recall-card-date">${date || ''}</span>
+            <div class="recall-arrow">›</div>
+          </div>
+        </div>
+        <div class="recall-detail">
+          <div class="recall-detail-inner">
+            <div class="recall-detail-grid">
+              <div class="recall-detail-row">
+                <span class="recall-detail-label">Recalling Firm</span>
+                <span class="recall-detail-value">${recallingFirm}</span>
+              </div>
+              <div class="recall-detail-row">
+                <span class="recall-detail-label">FDA Date</span>
+                <span class="recall-detail-value">${date || '—'}</span>
+              </div>
+              <div class="recall-detail-row">
+                <span class="recall-detail-label">Recall Type</span>
+                <span class="recall-detail-value">${badge.label}</span>
+              </div>
+              <div class="recall-detail-row">
+                <span class="recall-detail-label">Category</span>
+                <span class="recall-detail-value">${esc(r.terms || 'Animal & Veterinary')}</span>
+              </div>
+            </div>
+            <div class="recall-action-row">
+              ${fdaUrl ? `<a class="recall-fda-link" href="${fdaUrl}" target="_blank" rel="noopener noreferrer">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                View FDA Recall Page
+              </a>` : ''}
+              <button class="recall-ask-btn" data-brand="${brand}" data-product="${productType}" data-reason="${reason}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                Ask about this
+              </button>
+            </div>
+            <div>
+              <div class="recall-detail-label" style="margin-bottom:6px;">Product Images</div>
+              <div class="recall-images" id="imgs-${div.id || ''}"><span class="${r.fdaPath ? 'recall-img-loading' : 'recall-img-none'}">${r.fdaPath ? 'Loading…' : 'Not available'}</span></div>
+            </div>
+          </div>
+        </div>`;
+
+      // Assign a unique id so we can target the images container
+      const uid = Math.random().toString(36).slice(2, 8);
+      div.id = `rc-${uid}`;
+      div.querySelector('.recall-images').id = `imgs-${uid}`;
+
+      // "Ask about this" fills the chat input and focuses it
+      div.querySelector('.recall-ask-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const brand = r.brand || r.company || 'this product';
+        const product = r.title ? ` ${r.title}` : '';
+        const reason = r.reason || 'an unspecified reason';
+        const query = `${brand}${product} was recalled for: "${reason}". Why is this a safety concern and should I be worried for my cat?`;
+        const input = document.getElementById('chatInput');
+        input.value = query;
+        input.focus();
+        input.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+
+      let imagesLoaded = false;
+      div.querySelector('.recall-card-main').addEventListener('click', () => {
+        div.classList.toggle('open');
+        if (div.classList.contains('open') && !imagesLoaded && r.fdaPath) {
+          imagesLoaded = true;
+          fetch(`/api/recall-image?path=${encodeURIComponent(r.fdaPath)}`)
+            .then(res => res.json())
+            .then(data => {
+              const container = document.getElementById(`imgs-${uid}`);
+              if (!container) return;
+              if (data.images && data.images.length > 0) {
+                container.innerHTML = data.images.map(src =>
+                  `<img src="${src}" alt="Product image" loading="lazy" onerror="this.remove()" onclick="openLightbox('${src.replace(/'/g, "\\'")}')">`
+                ).join('');
+              } else {
+                container.innerHTML = '<span class="recall-img-none">No product images available on FDA page.</span>';
+              }
+            })
+            .catch(() => {
+              const container = document.getElementById(`imgs-${uid}`);
+              if (container) container.innerHTML = '<span class="recall-img-none">Could not load images.</span>';
+            });
+        }
+      });
+
+      return div;
+    }
+
+    function appendNextPage() {
+      if (loadingMore) return;
+      if (displayedCount >= allRecalls.length) return;
+      loadingMore = true;
+
+      const list = document.getElementById('recallList');
+
+      const spinner = document.createElement('div');
+      spinner.className = 'recall-sentinel';
+      spinner.innerHTML = '<div class="spinner"></div>';
+      list.appendChild(spinner);
+
+      setTimeout(() => {
+        spinner.remove();
+        const batch = allRecalls.slice(displayedCount, displayedCount + PAGE_SIZE);
+        displayedCount += batch.length;
+        batch.forEach(r => list.appendChild(buildCard(r)));
+
+        if (displayedCount >= allRecalls.length) {
+          const end = document.createElement('div');
+          end.className = 'recall-end';
+          end.textContent = `All ${allRecalls.length} recalls loaded`;
+          list.appendChild(end);
+        }
+        loadingMore = false;
+      }, 500);
+    }
+
+    function renderRecalls(data) {
+      const list = document.getElementById('recallList');
+      const monthLabel = document.getElementById('recallMonthLabel');
+      if (data.label) monthLabel.textContent = ` — ${data.label}`;
+
+      allRecalls = data.recalls || [];
+      displayedCount = 0;
+      loadingMore = false;
+      list.innerHTML = '';
+
+      if (allRecalls.length === 0) {
+        list.innerHTML = '<div class="recall-empty">No recalls found.</div>';
+        return;
+      }
+
+      // Show first page immediately
+      const batch = allRecalls.slice(0, PAGE_SIZE);
+      displayedCount = batch.length;
+      batch.forEach(r => list.appendChild(buildCard(r)));
+
+      // Attach scroll listener for subsequent pages
+      list.onscroll = () => {
+        if (loadingMore) return;
+        if (displayedCount >= allRecalls.length) return;
+        const nearBottom = list.scrollTop + list.clientHeight >= list.scrollHeight - 60;
+        if (nearBottom) appendNextPage();
+      };
+    }
+
+    function toggleRecalls() {
+      const isOpen = document.getElementById('layout').classList.contains('split');
+      if (isOpen) { closeRecalls(); } else { openRecalls(); }
+    }
+
+    async function openRecalls() {
+      document.getElementById('layout').classList.add('split');
+      document.getElementById('body').classList.add('split-open');
+      const cat = document.getElementById('catInChat');
+      if (cat) cat.classList.add('hidden');
+      document.getElementById('recallList').innerHTML = '<div class="recall-loading">Loading recalls…</div>';
+      document.getElementById('recallMonthLabel').textContent = '';
+      try {
+        const res = await fetch('/api/recalls');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load');
+        renderRecalls(data);
+      } catch (e) {
+        document.getElementById('recallList').innerHTML = `<div class="recall-empty">Error: ${e.message}</div>`;
+      }
+    }
+
+    function closeRecalls() {
+      document.getElementById('layout').classList.remove('split');
+      document.getElementById('body').classList.remove('split-open');
+      const cat = document.getElementById('catInChat');
+      if (cat) cat.classList.remove('hidden');
+    }
+
+    async function refreshRecalls() {
+      document.getElementById('recallList').innerHTML = '<div class="recall-loading">Loading recalls…</div>';
+      document.getElementById('recallMonthLabel').textContent = '';
+      try {
+        const res = await fetch('/api/recalls');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load');
+        renderRecalls(data);
+      } catch (e) {
+        document.getElementById('recallList').innerHTML = `<div class="recall-empty">Error: ${e.message}</div>`;
+      }
+    }
+
+    /* ── Attribution dropdown ── */
+    let _attrAnims = [];
+
+    function toggleAttr() {
+      const dd = document.getElementById('attrDropdown');
+      const isOpen = dd.classList.toggle('open');
+      if (isOpen) {
+        if (_attrAnims.length === 0 && typeof lottie !== 'undefined') {
+          _attrAnims.push(lottie.loadAnimation({
+            container: document.getElementById('attrAnim1'),
+            renderer: 'svg', loop: true, autoplay: true,
+            path: '/cat-typing.json'
+          }));
+          _attrAnims.push(lottie.loadAnimation({
+            container: document.getElementById('attrAnim2'),
+            renderer: 'svg', loop: true, autoplay: true,
+            path: '/cat-in-rocket.json'
+          }));
+        }
+      }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      const wrap = document.getElementById('attrWrap');
+      if (wrap && !wrap.contains(e.target)) {
+        document.getElementById('attrDropdown').classList.remove('open');
+      }
+    });
   </script>
+
+<style>
+  #catInChat {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    opacity: 1;
+    transition: opacity 0.4s ease;
+  }
+  #catInChat.hidden { opacity: 0; pointer-events: none; }
+  #catInRocketLottie { width: 300px; height: 300px; }
+  #catInChatLabel {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+    letter-spacing: 0.01em;
+    margin-top: -8px;
+  }
+
+  .chat-disclaimer {
+    padding: 8px 16px 10px;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.5;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+  }
+</style>
+<script>
+  /* ── Barcode Lookup ── */
+
+  const _nativeBarcodeDetector = ('BarcodeDetector' in window)
+    ? new BarcodeDetector({ formats: ['ean_13', 'upc_a', 'upc_e', 'ean_8'] })
+    : null;
+
+  let _barcodeStream = null;
+  let _scanInterval = null;
+  let _zxingReader = null;
+  let _zxingControls = null;
+  let _zxingLoaded = false;
+
+  async function startBarcodeScanning() {
+    if (!navigator.mediaDevices?.getUserMedia) return;
+    try {
+      _barcodeStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } }
+      });
+    } catch { return; }
+    const video = document.getElementById('barcodeVideo');
+    video.srcObject = _barcodeStream;
+    document.getElementById('barcodeCameraWrap').style.display = 'block';
+    document.getElementById('barcodeScanBtn').style.display = 'none';
+    if (_nativeBarcodeDetector) {
+      startNativeScan();
+    } else {
+      if (!_zxingLoaded) await loadZXing();
+      startZXingScan();
+    }
+  }
+
+  function stopBarcodeScanning() {
+    if (_zxingControls) { try { _zxingControls.stop(); } catch {} _zxingControls = null; }
+    if (_zxingReader) { try { _zxingReader.reset(); } catch {} _zxingReader = null; }
+    if (_scanInterval) { clearInterval(_scanInterval); _scanInterval = null; }
+    if (_barcodeStream) { _barcodeStream.getTracks().forEach(t => t.stop()); _barcodeStream = null; }
+    const video = document.getElementById('barcodeVideo');
+    if (video) video.srcObject = null;
+    const camWrap = document.getElementById('barcodeCameraWrap');
+    if (camWrap) camWrap.style.display = 'none';
+    const scanBtn = document.getElementById('barcodeScanBtn');
+    if (scanBtn) scanBtn.style.display = '';
+  }
+
+  function startNativeScan() {
+    const video = document.getElementById('barcodeVideo');
+    _scanInterval = setInterval(async () => {
+      if (video.readyState < 2) return;
+      try {
+        const codes = await _nativeBarcodeDetector.detect(video);
+        if (codes.length > 0) {
+          const code = codes[0].rawValue;
+          stopBarcodeScanning();
+          document.getElementById('barcodeInput').value = code;
+          lookupBarcode();
+        }
+      } catch {}
+    }, 300);
+  }
+
+  function loadZXing() {
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/@zxing/browser@latest/umd/index.min.js';
+      s.onload = () => { _zxingLoaded = true; resolve(); };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function startZXingScan() {
+    const video = document.getElementById('barcodeVideo');
+    _zxingReader = new ZXingBrowser.BrowserMultiFormatReader();
+    try {
+      const controls = await _zxingReader.decodeFromStream(_barcodeStream, video, (result, err) => {
+        if (result) {
+          const code = result.getText();
+          stopBarcodeScanning();
+          document.getElementById('barcodeInput').value = code;
+          lookupBarcode();
+        }
+      });
+      if (_barcodeStream) { _zxingControls = controls; }
+      else { try { controls.stop(); } catch {} }
+    } catch {}
+  }
+
+  function toggleBarcode() {
+    const dd = document.getElementById('barcodeDropdown');
+    const isOpen = dd.classList.toggle('open');
+    if (isOpen) {
+      setTimeout(() => document.getElementById('barcodeInput').focus(), 50);
+    } else {
+      stopBarcodeScanning();
+    }
+  }
+  function closeBarcode() {
+    stopBarcodeScanning();
+    document.getElementById('barcodeDropdown').classList.remove('open');
+  }
+
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('barcodeWrap');
+    if (wrap && !wrap.contains(e.target)) closeBarcode();
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') { closeBarcode(); } });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('barcodeInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') lookupBarcode();
+    });
+  });
+
+  async function lookupBarcode() {
+    const raw = document.getElementById('barcodeInput').value.trim().replace(/\D/g, '');
+    if (!raw) return;
+    const result = document.getElementById('barcodeResult');
+    const btn = document.getElementById('barcodeSearchBtn');
+    btn.disabled = true;
+    result.innerHTML = '<div class="barcode-loading">Looking up product…</div>';
+
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(raw)}.json?fields=product_name,brands,image_front_url,image_url,ingredients_text,quantity,categories`);
+      const data = await res.json();
+
+      if (data.status !== 1 || !data.product) {
+        result.innerHTML = '<div class="barcode-not-found">No product found for that barcode.<br>Double-check the number and try again.</div>';
+        btn.disabled = false;
+        return;
+      }
+
+      const p = data.product;
+      const name = (p.product_name || 'Unknown Product').trim();
+      const brand = (p.brands || '').split(',')[0].trim();
+      const img = p.image_front_url || p.image_url || '';
+      const ingredients = (p.ingredients_text || '').trim();
+      const qty = (p.quantity || '').trim();
+
+      const imgHtml = img
+        ? `<img class="barcode-product-img" src="${img}" alt="${name}" onclick="openLightbox('${img.replace(/'/g, "\\'")}')" />`
+        : '';
+
+      result.innerHTML = `
+        <div class="barcode-result-card">
+          ${imgHtml}
+          <div class="barcode-result-info">
+            ${brand ? `<div class="barcode-result-brand">${brand}</div>` : ''}
+            <div class="barcode-result-name">${name}</div>
+            ${qty ? `<div class="barcode-result-qty">${qty}</div>` : ''}
+          </div>
+        </div>
+        ${ingredients ? `
+          <div>
+            <div class="barcode-section-label">Ingredient List</div>
+            <div class="barcode-ingredients">${ingredients}</div>
+          </div>
+          <button class="barcode-ask-btn" onclick="barcodeAskAI(${JSON.stringify(brand || name)}, ${JSON.stringify(ingredients)})">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+            Ask FelineOpt about these ingredients
+          </button>
+        ` : '<div class="barcode-not-found" style="padding:14px 0 0;">No ingredient list available for this product.</div>'}
+      `;
+    } catch (e) {
+      result.innerHTML = `<div class="barcode-not-found">Error: ${e.message}</div>`;
+    }
+    btn.disabled = false;
+  }
+
+  function barcodeAskAI(productName, ingredients) {
+    closeBarcode();
+    const query = `Product: "${productName}"\n\nIngredient list: ${ingredients}\n\nPlease analyze these ingredients. Are any harmful or concerning for cats?`;
+    const input = document.getElementById('chatInput');
+    input.value = query;
+    input.focus();
+    sendMessage();
+  }
+
+  /* ── Lightbox ── */
+  function openLightbox(src) {
+    const img = document.getElementById('lightboxImg');
+    img.src = src;
+    document.getElementById('lightboxOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeLightbox(e) {
+    if (e && e.target === document.getElementById('lightboxImg')) return;
+    document.getElementById('lightboxOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+  (function() {
+    var _rocketAnim = null;
+    function initRocketAnim() {
+      if (typeof lottie === 'undefined') { setTimeout(initRocketAnim, 100); return; }
+      var el = document.getElementById('catInRocketLottie');
+      if (!el) return;
+      _rocketAnim = lottie.loadAnimation({
+        container: el,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: '/cat-in-rocket.json'
+      });
+    }
+    initRocketAnim();
+
+    var _origAddBubble = window.addBubble;
+    // Patch addBubble to destroy rocket animation when first message is sent
+    var _patchedAddBubble = window.addBubble;
+    // Override to destroy lottie when cat is removed
+    var _origRemove = Element.prototype.remove;
+    document.addEventListener('DOMContentLoaded', function() {});
+
+    // Expose destroy so addBubble can call it
+    window._destroyRocketAnim = function() {
+      if (_rocketAnim) { _rocketAnim.destroy(); _rocketAnim = null; }
+    };
+  })();
+</script>
 </body>
 </html>
