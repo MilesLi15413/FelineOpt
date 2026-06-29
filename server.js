@@ -33,6 +33,61 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // ── Ingredient lookup via Claude ─────────────────────
+  if (req.method === 'GET' && req.url.startsWith('/api/ingredients')) {
+    const qs = new URL(`http://x${req.url}`).searchParams;
+    const product = (qs.get('product') || '').trim();
+    if (!product) {
+      res.writeHead(400, { ...headers, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing product' }));
+      return;
+    }
+
+    const payload = JSON.stringify({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 512,
+      messages: [{
+        role: 'user',
+        content: `List the ingredients in "${product}" cat/pet food based on your training knowledge. Reply with ONLY a comma-separated ingredient list — no intro, no explanation, no disclaimers. If you have no knowledge of this product at all, reply with exactly: UNKNOWN`,
+      }],
+    });
+
+    const options = {
+      hostname: 'api.anthropic.com',
+      path: '/v1/messages',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+    };
+
+    const proxy = https.request(options, (apiRes) => {
+      let data = '';
+      apiRes.on('data', c => { data += c; });
+      apiRes.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          const text = json.content?.[0]?.text?.trim() || 'UNKNOWN';
+          res.writeHead(200, { ...headers, 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ingredients: text === 'UNKNOWN' ? null : text }));
+        } catch {
+          res.writeHead(500, { ...headers, 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ingredients: null }));
+        }
+      });
+    });
+    proxy.on('error', () => {
+      res.writeHead(500, { ...headers, 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ingredients: null }));
+    });
+    proxy.write(payload);
+    proxy.end();
+    return;
+  }
+
   // ── Chat proxy endpoint ──────────────────────────────
   if (req.method === 'POST' && req.url === '/api/chat') {
     let body = '';

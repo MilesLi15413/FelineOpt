@@ -1621,6 +1621,59 @@
   let _zxingControls = null;
   let _zxingLoaded = false;
 
+  // Stability tracking — same barcode must appear STABLE_REQUIRED consecutive frames
+  // with corners not moving more than CORNER_MOVE_PX pixels
+  const STABLE_REQUIRED = 3;
+  const CORNER_MOVE_PX  = 12;
+  let _stableCode    = null;
+  let _stableCount   = 0;
+  let _lastCorners   = null;
+
+  function _resetStability() {
+    _stableCode  = null;
+    _stableCount = 0;
+    _lastCorners = null;
+  }
+
+  function _setScanStatus(msg) {
+    const el = document.querySelector('.barcode-camera-status');
+    if (el) el.textContent = msg;
+  }
+
+  function _cornersStable(corners) {
+    if (!_lastCorners || !corners || corners.length !== _lastCorners.length) return true;
+    return corners.every((pt, i) => {
+      const dx = pt.x - _lastCorners[i].x;
+      const dy = pt.y - _lastCorners[i].y;
+      return Math.sqrt(dx * dx + dy * dy) <= CORNER_MOVE_PX;
+    });
+  }
+
+  // Returns true when the code is confirmed stable enough to process
+  function _tickStability(code, corners) {
+    if (!_cornersStable(corners)) {
+      _stableCount = 0;
+      _lastCorners = corners;
+      _stableCode  = code;
+      _setScanStatus('Hold still…');
+      return false;
+    }
+    if (corners) _lastCorners = corners;
+
+    if (code === _stableCode) {
+      _stableCount++;
+    } else {
+      _stableCode  = code;
+      _stableCount = 1;
+    }
+
+    if (_stableCount < STABLE_REQUIRED) {
+      _setScanStatus(`Confirming… ${_stableCount}/${STABLE_REQUIRED}`);
+      return false;
+    }
+    return true;
+  }
+
   async function startBarcodeScanning() {
     if (!navigator.mediaDevices?.getUserMedia) return;
     try {
@@ -1632,6 +1685,8 @@
     video.srcObject = _barcodeStream;
     document.getElementById('barcodeCameraWrap').style.display = 'block';
     document.getElementById('barcodeScanBtn').style.display = 'none';
+    _resetStability();
+    _setScanStatus('Point camera at barcode…');
     if (_nativeBarcodeDetector) {
       startNativeScan();
     } else {
@@ -1641,6 +1696,7 @@
   }
 
   function stopBarcodeScanning() {
+    _resetStability();
     if (_zxingControls) { try { _zxingControls.stop(); } catch {} _zxingControls = null; }
     if (_zxingReader) { try { _zxingReader.reset(); } catch {} _zxingReader = null; }
     if (_scanInterval) { clearInterval(_scanInterval); _scanInterval = null; }
@@ -1659,11 +1715,18 @@
       if (video.readyState < 2) return;
       try {
         const codes = await _nativeBarcodeDetector.detect(video);
-        if (codes.length > 0) {
-          const code = codes[0].rawValue;
+        if (codes.length === 0) {
+          if (_stableCount > 0) { _resetStability(); _setScanStatus('Point camera at barcode…'); }
+          return;
+        }
+        const detected = codes[0];
+        if (_tickStability(detected.rawValue, detected.cornerPoints || null)) {
           stopBarcodeScanning();
-          document.getElementById('barcodeInput').value = code;
-          lookupBarcode();
+          const inp = document.getElementById('barcodeInput');
+          inp.value = detected.rawValue;
+          inp.focus();
+          inp.select();
+          _setScanStatus('');
         }
       } catch {}
     }, 300);
@@ -1685,10 +1748,18 @@
     try {
       const controls = await _zxingReader.decodeFromStream(_barcodeStream, video, (result, err) => {
         if (result) {
-          const code = result.getText();
-          stopBarcodeScanning();
-          document.getElementById('barcodeInput').value = code;
-          lookupBarcode();
+          if (_tickStability(result.getText(), null)) {
+            const code = result.getText();
+            stopBarcodeScanning();
+            const inp = document.getElementById('barcodeInput');
+            inp.value = code;
+            inp.focus();
+            inp.select();
+            _setScanStatus('');
+          }
+        } else if (err && _stableCount > 0) {
+          _resetStability();
+          _setScanStatus('Point camera at barcode…');
         }
       });
       if (_barcodeStream) { _zxingControls = controls; }
@@ -1722,6 +1793,20 @@
     });
   });
 
+  const _BARCODE_FIELDS = 'product_name,brands,image_front_url,image_url,ingredients_text,quantity,categories';
+
+  async function _fetchBarcode(code) {
+    // Try Open Food Facts, then Open Pet Food Facts
+    for (const base of ['https://world.openfoodfacts.org', 'https://world.openpetfoodfacts.org']) {
+      try {
+        const res = await fetch(`${base}/api/v2/product/${encodeURIComponent(code)}.json?fields=${_BARCODE_FIELDS}`);
+        const data = await res.json();
+        if (data.status === 1 && data.product) return data.product;
+      } catch {}
+    }
+    return null;
+  }
+
   async function lookupBarcode() {
     const raw = document.getElementById('barcodeInput').value.trim().replace(/\D/g, '');
     if (!raw) return;
@@ -1731,16 +1816,25 @@
     result.innerHTML = '<div class="barcode-loading">Looking up product…</div>';
 
     try {
-      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(raw)}.json?fields=product_name,brands,image_front_url,image_url,ingredients_text,quantity,categories`);
-      const data = await res.json();
+      // Try raw, then strip leading zeros one at a time (EAN-13 → UPC-A fallback)
+      const seen = new Set();
+      const candidates = [];
+      for (const c of [raw, raw.replace(/^0+/, '0'), raw.replace(/^0+/, ''), raw.padStart(13, '0')]) {
+        if (c && !seen.has(c)) { seen.add(c); candidates.push(c); }
+      }
 
-      if (data.status !== 1 || !data.product) {
+      let p = null;
+      for (const code of candidates) {
+        p = await _fetchBarcode(code);
+        if (p) break;
+      }
+
+      if (!p) {
         result.innerHTML = '<div class="barcode-not-found">No product found for that barcode.<br>Double-check the number and try again.</div>';
         btn.disabled = false;
         return;
       }
 
-      const p = data.product;
       const name = (p.product_name || 'Unknown Product').trim();
       const brand = (p.brands || '').split(',')[0].trim();
       const img = p.image_front_url || p.image_url || '';
@@ -1769,8 +1863,44 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
             Ask FelineOpt about these ingredients
           </button>
-        ` : '<div class="barcode-not-found" style="padding:14px 0 0;">No ingredient list available for this product.</div>'}
+        ` : `
+          <div id="barcode-ing-lookup">
+            <div class="barcode-loading" style="padding:10px 0 4px;">Looking up ingredients…</div>
+          </div>
+        `}
       `;
+
+      if (!ingredients) {
+        const label = [brand, name].filter(Boolean).join(' ');
+        fetch(`/api/ingredients?product=${encodeURIComponent(label)}`)
+          .then(r => r.json())
+          .then(d => {
+            const box = document.getElementById('barcode-ing-lookup');
+            if (!box) return;
+            if (d.ingredients) {
+              box.innerHTML = `
+                <div>
+                  <div class="barcode-section-label">Ingredient List <span style="font-weight:500;text-transform:none;letter-spacing:0;color:var(--muted);font-size:0.6rem;">(AI-sourced)</span></div>
+                  <div class="barcode-ingredients">${d.ingredients}</div>
+                </div>
+                <button class="barcode-ask-btn" onclick="barcodeAskAI(${JSON.stringify(label)}, ${JSON.stringify(d.ingredients)})">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  Ask FelineOpt about these ingredients
+                </button>`;
+            } else {
+              box.innerHTML = `
+                <div class="barcode-not-found" style="padding:10px 0 4px;">Ingredient list not found.</div>
+                <button class="barcode-ask-btn" onclick="barcodeAskByName(${JSON.stringify(brand || name)}, ${JSON.stringify(name)})">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+                  Ask FelineOpt about this product
+                </button>`;
+            }
+          })
+          .catch(() => {
+            const box = document.getElementById('barcode-ing-lookup');
+            if (box) box.innerHTML = '<div class="barcode-not-found" style="padding:10px 0 4px;">Could not load ingredients.</div>';
+          });
+      }
     } catch (e) {
       result.innerHTML = `<div class="barcode-not-found">Error: ${e.message}</div>`;
     }
@@ -1780,6 +1910,16 @@
   function barcodeAskAI(productName, ingredients) {
     closeBarcode();
     const query = `Product: "${productName}"\n\nIngredient list: ${ingredients}\n\nPlease analyze these ingredients. Are any harmful or concerning for cats?`;
+    const input = document.getElementById('chatInput');
+    input.value = query;
+    input.focus();
+    sendMessage();
+  }
+
+  function barcodeAskByName(brand, productName) {
+    closeBarcode();
+    const label = brand && brand !== productName ? `${brand} — ${productName}` : productName;
+    const query = `I have a cat product called "${label}". What are its ingredients and are any of them harmful or concerning for cats?`;
     const input = document.getElementById('chatInput');
     input.value = query;
     input.focus();
