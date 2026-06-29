@@ -1266,7 +1266,8 @@
 
         if (!res.ok) {
           const err = await res.json().catch(() => ({}));
-          addBubble('assistant', `Error: ${err?.error || res.statusText}`);
+          const errMsg = err?.error?.message || (typeof err?.error === 'string' ? err.error : null) || res.statusText;
+          addBubble('assistant', `Error: ${errMsg}`);
           document.getElementById('sendBtn').disabled = false;
           return;
         }
